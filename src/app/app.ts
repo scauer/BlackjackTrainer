@@ -81,6 +81,7 @@ export class App {
   ];
 
   selectedStrategyId = this.strategies[0].id;
+  viewMode: 'game' | 'deck' = 'game';
   bankroll = STARTING_BANKROLL;
   shoe: Card[] = [];
   round: Round | null = null;
@@ -125,6 +126,14 @@ export class App {
       ['Base wager', this.money(BASE_WAGER)],
       ['Shoe mode', 'Fresh each hand'],
     ];
+  }
+
+  get testDeck(): Card[] {
+    return SUITS.flatMap((suit) => RANKS.map((rank) => ({ rank, suit })));
+  }
+
+  toggleDeckTest(): void {
+    this.viewMode = this.viewMode === 'game' ? 'deck' : 'game';
   }
 
   selectStrategy(event: Event): void {
@@ -238,8 +247,12 @@ export class App {
   }
 
   cardLabel(card: Card): string {
-    const suit = { spades: 'S', hearts: 'H', diamonds: 'D', clubs: 'C' }[card.suit];
+    const suit = this.suitSymbol(card);
     return `${card.rank}${suit}`;
+  }
+
+  suitSymbol(card: Card): string {
+    return { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' }[card.suit];
   }
 
   cardClass(card: Card, hidden = false): string {
@@ -248,6 +261,30 @@ export class App {
       hidden ? 'hidden' : '',
       card.suit === 'hearts' || card.suit === 'diamonds' ? 'red' : '',
     ].join(' ');
+  }
+
+  cardImageSrc(card: Card, hidden = false): string {
+    return `/assets/svg-cards/${hidden ? 'back-blue' : this.cardAssetName(card)}.png`;
+  }
+
+  private cardAssetName(card: Card): string {
+    const suit = { spades: 'spade', hearts: 'heart', diamonds: 'diamond', clubs: 'club' }[card.suit];
+    const rank: Record<Rank, string> = {
+      A: '1',
+      '2': '2',
+      '3': '3',
+      '4': '4',
+      '5': '5',
+      '6': '6',
+      '7': '7',
+      '8': '8',
+      '9': '9',
+      '10': '10',
+      J: 'jack',
+      Q: 'queen',
+      K: 'king',
+    };
+    return `${suit}_${rank[card.rank]}`;
   }
 
   handClasses(hand: PlayerHand, index: number): string {

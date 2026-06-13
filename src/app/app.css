@@ -85,6 +85,12 @@ select {
   padding: 1rem;
 }
 
+.deck-test {
+  grid-column: 1 / -1;
+  grid-template-rows: auto;
+  align-content: start;
+}
+
 .zone-header {
   display: flex;
   align-items: center;
@@ -109,26 +115,18 @@ select {
 }
 
 .card {
-  display: grid;
-  place-items: center;
-  width: 4.25rem;
-  aspect-ratio: 0.72;
+  width: 6.25rem;
+  aspect-ratio: 338 / 489;
   border-radius: 8px;
-  background: var(--card);
-  color: var(--card-ink);
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
-  font-size: 1.35rem;
-  font-weight: 850;
+  overflow: hidden;
 }
 
-.card.red {
-  color: #b52630;
-}
-
-.card.hidden {
-  border: 2px solid rgba(255, 255, 255, 0.75);
-  background: repeating-linear-gradient(45deg, #173c60 0 8px, #23527f 8px 16px);
-  color: transparent;
+.card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .message-panel {

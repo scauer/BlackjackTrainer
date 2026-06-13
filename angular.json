@@ -47,6 +47,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/svg-cards/png/2x",
+                "output": "/assets/svg-cards"
               }
             ],
             "styles": [

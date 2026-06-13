@@ -20,93 +20,123 @@
     </div>
 
     <button type="button" class="ghost" (click)="resetBankroll()">Reset</button>
+    <button type="button" class="ghost" (click)="toggleDeckTest()">{{ viewMode === 'game' ? 'Deck Test' : 'Game' }}</button>
   </section>
 
-  <section class="table" aria-live="polite">
-    <div class="dealer-zone">
-      <div class="zone-header">
-        <h2>Dealer</h2>
-        <span class="pill">{{ dealerTotalLabel }}</span>
+  <ng-template #cardFace let-card let-hidden="hidden">
+    <div [class]="cardClass(card, hidden)">
+      <img [src]="cardImageSrc(card, hidden)" [alt]="hidden ? 'Hidden card' : cardLabel(card)" />
+    </div>
+  </ng-template>
+
+  @if (viewMode === 'game') {
+    <section class="table" aria-live="polite">
+      <div class="dealer-zone">
+        <div class="zone-header">
+          <h2>Dealer</h2>
+          <span class="pill">{{ dealerTotalLabel }}</span>
+        </div>
+        <div class="cards">
+          @if (round) {
+            @for (card of round.dealerHand; track $index) {
+              <ng-container
+                [ngTemplateOutlet]="cardFace"
+                [ngTemplateOutletContext]="{ $implicit: card, hidden: $index === 1 && !round.dealerRevealed }"
+              />
+            }
+          }
+        </div>
       </div>
-      <div class="cards">
-        @if (round) {
-          @for (card of round.dealerHand; track $index) {
-            <div [class]="cardClass(card, $index === 1 && !round.dealerRevealed)">
-              @if (!($index === 1 && !round.dealerRevealed)) {
-                {{ cardLabel(card) }}
+
+      <div class="message-panel">
+        <p class="message">{{ message }}</p>
+        <p class="subtle">{{ hint }}</p>
+      </div>
+
+      <div class="player-zone">
+        <div class="zone-header">
+          <h2>Player</h2>
+          <span class="pill">{{ playerTotalLabel }}</span>
+        </div>
+        <div class="hands">
+          @if (round) {
+            @for (hand of round.playerHands; track $index) {
+              <article [class]="handClasses(hand, $index)">
+                <div class="hand-title">
+                  <span>Hand {{ $index + 1 }}</span>
+                  <span>{{ handSummary(hand) }}</span>
+                </div>
+                <div class="hand-cards">
+                  @for (card of hand.cards; track $index) {
+                    <ng-container [ngTemplateOutlet]="cardFace" [ngTemplateOutletContext]="{ $implicit: card }" />
+                  }
+                </div>
+              </article>
+            }
+          }
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="button" [disabled]="round && !round.completed" (click)="startRound()">Deal</button>
+        <button type="button" [disabled]="!canAct" (click)="playerAction('hit')">Hit</button>
+        <button type="button" [disabled]="!canAct" (click)="playerAction('stand')">Stand</button>
+        <button type="button" [disabled]="!canAct || !canDouble(activeHand)" (click)="playerAction('double')">Double</button>
+        <button type="button" [disabled]="!canAct || !canSplit(activeHand)" (click)="playerAction('split')">Split</button>
+      </div>
+    </section>
+
+    <aside class="side-panel">
+      <section>
+        <h2>Rules</h2>
+        <dl>
+          @for (row of rulesRows; track row[0]) {
+            <dt>{{ row[0] }}</dt>
+            <dd>{{ row[1] }}</dd>
+          }
+        </dl>
+      </section>
+
+      <section>
+        <h2>Session</h2>
+        <div class="stats">
+          <div><span>Hands</span><strong>{{ stats.handsPlayed }}</strong></div>
+          <div><span>Correct</span><strong>{{ stats.correctMoves }}</strong></div>
+          <div><span>Mistakes</span><strong>{{ stats.mistakes }}</strong></div>
+          <div><span>Streak</span><strong>{{ stats.streak }}</strong></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Recent Hands</h2>
+        <ol class="history">
+          @for (item of history; track $index) {
+            <li>{{ item }}</li>
+          }
+        </ol>
+      </section>
+    </aside>
+  } @else {
+    <section class="table deck-test">
+      <div class="zone-header">
+        <h2>Deck Test</h2>
+        <span class="pill">52 cards</span>
+      </div>
+
+      @for (suit of ['spades', 'hearts', 'diamonds', 'clubs']; track suit) {
+        <section>
+          <div class="zone-header">
+            <h2>{{ suit }}</h2>
+          </div>
+          <div class="cards">
+            @for (card of testDeck; track card.rank + card.suit) {
+              @if (card.suit === suit) {
+                <ng-container [ngTemplateOutlet]="cardFace" [ngTemplateOutletContext]="{ $implicit: card }" />
               }
-            </div>
-          }
-        }
-      </div>
-    </div>
-
-    <div class="message-panel">
-      <p class="message">{{ message }}</p>
-      <p class="subtle">{{ hint }}</p>
-    </div>
-
-    <div class="player-zone">
-      <div class="zone-header">
-        <h2>Player</h2>
-        <span class="pill">{{ playerTotalLabel }}</span>
-      </div>
-      <div class="hands">
-        @if (round) {
-          @for (hand of round.playerHands; track $index) {
-            <article [class]="handClasses(hand, $index)">
-              <div class="hand-title">
-                <span>Hand {{ $index + 1 }}</span>
-                <span>{{ handSummary(hand) }}</span>
-              </div>
-              <div class="hand-cards">
-                @for (card of hand.cards; track $index) {
-                  <div [class]="cardClass(card)">{{ cardLabel(card) }}</div>
-                }
-              </div>
-            </article>
-          }
-        }
-      </div>
-    </div>
-
-    <div class="actions">
-      <button type="button" [disabled]="round && !round.completed" (click)="startRound()">Deal</button>
-      <button type="button" [disabled]="!canAct" (click)="playerAction('hit')">Hit</button>
-      <button type="button" [disabled]="!canAct" (click)="playerAction('stand')">Stand</button>
-      <button type="button" [disabled]="!canAct || !canDouble(activeHand)" (click)="playerAction('double')">Double</button>
-      <button type="button" [disabled]="!canAct || !canSplit(activeHand)" (click)="playerAction('split')">Split</button>
-    </div>
-  </section>
-
-  <aside class="side-panel">
-    <section>
-      <h2>Rules</h2>
-      <dl>
-        @for (row of rulesRows; track row[0]) {
-          <dt>{{ row[0] }}</dt>
-          <dd>{{ row[1] }}</dd>
-        }
-      </dl>
+            }
+          </div>
+        </section>
+      }
     </section>
-
-    <section>
-      <h2>Session</h2>
-      <div class="stats">
-        <div><span>Hands</span><strong>{{ stats.handsPlayed }}</strong></div>
-        <div><span>Correct</span><strong>{{ stats.correctMoves }}</strong></div>
-        <div><span>Mistakes</span><strong>{{ stats.mistakes }}</strong></div>
-        <div><span>Streak</span><strong>{{ stats.streak }}</strong></div>
-      </div>
-    </section>
-
-    <section>
-      <h2>Recent Hands</h2>
-      <ol class="history">
-        @for (item of history; track $index) {
-          <li>{{ item }}</li>
-        }
-      </ol>
-    </section>
-  </aside>
+  }
 </main>
