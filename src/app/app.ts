@@ -264,7 +264,7 @@ export class App {
   }
 
   cardImageSrc(card: Card, hidden = false): string {
-    return `/assets/svg-cards/${hidden ? 'back-blue' : this.cardAssetName(card)}.png`;
+    return `assets/svg-cards/${hidden ? 'back-blue' : this.cardAssetName(card)}.png`;
   }
 
   private cardAssetName(card: Card): string {
