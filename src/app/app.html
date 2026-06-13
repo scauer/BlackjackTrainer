@@ -1,0 +1,112 @@
+<main class="shell">
+  <section class="topbar" aria-label="Game controls">
+    <div>
+      <h1>Blackjack Trainer</h1>
+      <p class="subtle">Strategy-gated blackjack simulation</p>
+    </div>
+
+    <label class="strategy-field">
+      <span>Strategy</span>
+      <select [value]="selectedStrategyId" (change)="selectStrategy($event)">
+        @for (item of strategies; track item.id) {
+          <option [value]="item.id">{{ item.name }}</option>
+        }
+      </select>
+    </label>
+
+    <div class="bankroll">
+      <span>Bankroll</span>
+      <strong>{{ money(bankroll) }}</strong>
+    </div>
+
+    <button type="button" class="ghost" (click)="resetBankroll()">Reset</button>
+  </section>
+
+  <section class="table" aria-live="polite">
+    <div class="dealer-zone">
+      <div class="zone-header">
+        <h2>Dealer</h2>
+        <span class="pill">{{ dealerTotalLabel }}</span>
+      </div>
+      <div class="cards">
+        @if (round) {
+          @for (card of round.dealerHand; track $index) {
+            <div [class]="cardClass(card, $index === 1 && !round.dealerRevealed)">
+              @if (!($index === 1 && !round.dealerRevealed)) {
+                {{ cardLabel(card) }}
+              }
+            </div>
+          }
+        }
+      </div>
+    </div>
+
+    <div class="message-panel">
+      <p class="message">{{ message }}</p>
+      <p class="subtle">{{ hint }}</p>
+    </div>
+
+    <div class="player-zone">
+      <div class="zone-header">
+        <h2>Player</h2>
+        <span class="pill">{{ playerTotalLabel }}</span>
+      </div>
+      <div class="hands">
+        @if (round) {
+          @for (hand of round.playerHands; track $index) {
+            <article [class]="handClasses(hand, $index)">
+              <div class="hand-title">
+                <span>Hand {{ $index + 1 }}</span>
+                <span>{{ handSummary(hand) }}</span>
+              </div>
+              <div class="hand-cards">
+                @for (card of hand.cards; track $index) {
+                  <div [class]="cardClass(card)">{{ cardLabel(card) }}</div>
+                }
+              </div>
+            </article>
+          }
+        }
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" [disabled]="round && !round.completed" (click)="startRound()">Deal</button>
+      <button type="button" [disabled]="!canAct" (click)="playerAction('hit')">Hit</button>
+      <button type="button" [disabled]="!canAct" (click)="playerAction('stand')">Stand</button>
+      <button type="button" [disabled]="!canAct || !canDouble(activeHand)" (click)="playerAction('double')">Double</button>
+      <button type="button" [disabled]="!canAct || !canSplit(activeHand)" (click)="playerAction('split')">Split</button>
+    </div>
+  </section>
+
+  <aside class="side-panel">
+    <section>
+      <h2>Rules</h2>
+      <dl>
+        @for (row of rulesRows; track row[0]) {
+          <dt>{{ row[0] }}</dt>
+          <dd>{{ row[1] }}</dd>
+        }
+      </dl>
+    </section>
+
+    <section>
+      <h2>Session</h2>
+      <div class="stats">
+        <div><span>Hands</span><strong>{{ stats.handsPlayed }}</strong></div>
+        <div><span>Correct</span><strong>{{ stats.correctMoves }}</strong></div>
+        <div><span>Mistakes</span><strong>{{ stats.mistakes }}</strong></div>
+        <div><span>Streak</span><strong>{{ stats.streak }}</strong></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Recent Hands</h2>
+      <ol class="history">
+        @for (item of history; track $index) {
+          <li>{{ item }}</li>
+        }
+      </ol>
+    </section>
+  </aside>
+</main>
