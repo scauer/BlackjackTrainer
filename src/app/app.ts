@@ -77,6 +77,8 @@ export class App {
   message = 'Deal a hand to begin.';
   hint = '';
   history: string[] = [];
+  resultClass: '' | 'won' | 'lost' | 'push' = '';
+  violationText = '';
   stats = {
     handsPlayed: 0,
     correctMoves: 0,
@@ -114,6 +116,10 @@ export class App {
     return this.activeHand ? String(this.handValue(this.activeHand.cards).total) : 'Total';
   }
 
+  get messagePanelClasses(): string {
+    return ['message-panel', this.round?.completed ? this.resultClass : ''].join(' ');
+  }
+
   get rulesRows(): [string, string][] {
     return [
       ['Decks', String(this.tableRules.decks)],
@@ -148,6 +154,7 @@ export class App {
   selectStrategy(event: Event): void {
     this.selectedStrategyId = (event.target as HTMLSelectElement).value;
     this.round = null;
+    this.clearResult();
     this.setMessage('Strategy changed. Deal a hand to begin.', '');
   }
 
@@ -156,6 +163,7 @@ export class App {
     this.stats = { handsPlayed: 0, correctMoves: 0, mistakes: 0, streak: 0 };
     this.history = [];
     this.round = null;
+    this.clearResult();
     this.setMessage('Bankroll reset. Deal a hand to begin.', '');
   }
 
@@ -166,6 +174,7 @@ export class App {
     }
 
     this.shoe = this.buildShoe(this.tableRules.decks);
+    this.clearResult();
     this.round = {
       dealerHand: [this.drawCard(), this.drawCard()],
       playerHands: [this.createHand([this.drawCard(), this.drawCard()], BASE_WAGER)],
@@ -191,12 +200,13 @@ export class App {
 
     const expected = this.correctAction(hand, round.dealerHand[0]);
     if (action !== expected) {
+      const violationText = this.violationMessage(hand, round.dealerHand[0], action, expected);
       this.stats.mistakes += 1;
       this.stats.streak = 0;
       if (action === 'hit') hand.cards.push(this.drawCard());
       hand.failed = true;
       hand.completed = true;
-      this.forceDealerWin(hand, action, expected);
+      this.forceDealerWin(hand, action, expected, violationText);
       return;
     }
 
@@ -458,10 +468,11 @@ export class App {
     this.settleRound('Hand complete.');
   }
 
-  private forceDealerWin(hand: PlayerHand, action: Action, expected: Action): void {
+  private forceDealerWin(hand: PlayerHand, action: Action, expected: Action, violationText: string): void {
     const round = this.round;
     if (!round) return;
     round.dealerRevealed = true;
+    this.violationText = violationText;
     hand.result = 'lost';
     hand.completed = true;
     this.playDealerForForcedWin(hand);
@@ -558,17 +569,28 @@ export class App {
     this.stats.handsPlayed += 1;
     const summary = `${message} ${delta >= 0 ? '+' : ''}${this.money(delta)}`;
     this.history = [summary, ...this.history].slice(0, 8);
-    this.setMessage(
-      summary,
-      round.playerHands.some((item) => item.failed)
-        ? 'The dealer resolved legally, but the hand was locked as a loss after the strategy mistake.'
-        : '',
-    );
+    this.resultClass = delta > 0 ? 'won' : delta < 0 ? 'lost' : 'push';
+    this.setMessage(this.resultTitle(delta), delta < 0 ? this.violationText : '');
   }
 
   private setMessage(message: string, hint: string): void {
     this.message = message;
     this.hint = hint;
+  }
+
+  private clearResult(): void {
+    this.resultClass = '';
+    this.violationText = '';
+  }
+
+  private resultTitle(delta: number): string {
+    if (delta > 0) return 'You won!';
+    if (delta < 0) return 'Dealer Won!';
+    return 'Push';
+  }
+
+  private violationMessage(hand: PlayerHand, dealerUpcard: Card, action: Action, expected: Action): string {
+    return `Don't ${this.label(action).toLowerCase()} when dealer has ${this.normalizeDealerRank(dealerUpcard)} and you have ${this.handValue(hand.cards).total}. ${this.label(expected)} instead.`;
   }
 
   private label(action: Action): string {

@@ -146,9 +146,40 @@ select {
   padding: 0.75rem 0;
 }
 
+.message-panel.won,
+.message-panel.lost,
+.message-panel.push {
+  border: 0;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.message-panel.won { background: #1f7a4d; }
+.message-panel.lost { background: #8f2d3d; }
+.message-panel.push { background: #56606a; }
+
 .message {
   font-size: 1.15rem;
   font-weight: 750;
+}
+
+.message-panel.won .message,
+.message-panel.lost .message,
+.message-panel.push .message,
+.message-panel.won .subtle,
+.message-panel.lost .subtle,
+.message-panel.push .subtle {
+  color: white;
+}
+
+.message-panel.won .message,
+.message-panel.lost .message,
+.message-panel.push .message {
+  font-size: 1.75rem;
+}
+
+.subtle:empty {
+  display: none;
 }
 
 .hands {
@@ -263,7 +294,7 @@ dd {
 
 .legend span,
 .matrix td {
- / border-radius: 6px;
+  border-radius: 6px;
   color: #06100d;
   font-weight: 800;
   padding: 0.3rem 0.45rem;

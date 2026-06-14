@@ -8,5 +8,6 @@
 - Store strategies as JSON files under a strategies folder.
 - Add a visual chart for each strategy.
 - Reuse the strategy chart for statistics overlays.
+- Auto stand when the player reaches 21.
 - Add installable web app support for phones.
 - Before implementing installable web app support, evaluate the benefits of add-to-home-screen behavior, PWA manifest, app icons, service worker, and offline support.
