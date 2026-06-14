@@ -184,6 +184,7 @@ export class App {
     if (action !== expected) {
       this.stats.mistakes += 1;
       this.stats.streak = 0;
+      if (action === 'hit') hand.cards.push(this.drawCard());
       hand.failed = true;
       hand.completed = true;
       this.forceDealerWin(hand, action, expected);
