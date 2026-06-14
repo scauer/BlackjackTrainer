@@ -22,11 +22,11 @@
 .topbar {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: minmax(14rem, 1fr) minmax(16rem, 24rem) auto auto;
-  align-items: end;
-  gap: 1rem;
+  grid-template-columns: minmax(13rem, 1fr) minmax(14rem, 21rem) auto auto auto;
+  align-items: center;
+  gap: 0.75rem;
   border-radius: 8px;
-  padding: 1rem;
+  padding: 0.65rem 0.75rem;
 }
 
 h1,
@@ -36,7 +36,7 @@ p {
 }
 
 h1 {
-  font-size: clamp(1.45rem, 2vw, 2.2rem);
+  font-size: clamp(1.3rem, 1.8vw, 1.8rem);
   line-height: 1.05;
 }
 
@@ -63,7 +63,7 @@ h2 {
 }
 
 select {
-  min-height: 2.75rem;
+  min-height: 2.35rem;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #0b251d;
@@ -71,8 +71,15 @@ select {
   padding: 0 0.75rem;
 }
 
+.topbar button {
+  min-height: 2rem;
+  border-radius: 6px;
+  padding: 0 0.65rem;
+  font-size: 0.85rem;
+}
+
 .bankroll strong {
-  font-size: 1.45rem;
+  font-size: 1.25rem;
   color: var(--gold);
 }
 
