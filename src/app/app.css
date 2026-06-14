@@ -254,9 +254,45 @@ dd {
 }
 
 @media (max-width: 880px) {
-  .shell,
-  .topbar {
+  .shell {
     grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  .topbar > div:first-child,
+  .strategy-field {
+    grid-column: 1 / -1;
+  }
+
+  .topbar h1 {
+    font-size: 1.15rem;
+  }
+
+  .topbar .subtle {
+    display: none;
+  }
+
+  .topbar select {
+    min-height: 2rem;
+  }
+
+  .bankroll {
+    grid-column: 1;
+  }
+
+  .bankroll strong {
+    font-size: 1.05rem;
+  }
+
+  .topbar button {
+    min-height: 1.55rem;
+    padding: 0 0.4rem;
+    font-size: 0.7rem;
   }
 
   .actions {
