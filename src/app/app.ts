@@ -66,6 +66,7 @@ export class App {
   readonly startingBankroll = STARTING_BANKROLL;
   readonly baseWager = BASE_WAGER;
   readonly dealerRanks = DEALER_RANKS;
+  readonly chartLegend: Action[] = ['hit', 'stand', 'double', 'split'];
   readonly strategies = STRATEGIES;
 
   selectedStrategyId = this.strategies[0].id;
@@ -257,8 +258,25 @@ export class App {
     return Boolean(hand && hand.cards.length === 2 && !hand.completed);
   }
 
-  chartAction(table: StrategyTable, row: string, dealer: DealerRank): string {
-    return this.label(table[row]?.[dealer] ?? 'hit');
+  chartAction(table: StrategyTable, row: string, dealer: DealerRank): Action {
+    return table[row]?.[dealer] ?? 'hit';
+  }
+
+  chartActionClass(action: Action): string {
+    return `action-${action}`;
+  }
+
+  chartActionText(action: Action): string {
+    return {
+      hit: 'H',
+      stand: 'S',
+      double: 'D',
+      split: 'P',
+    }[action];
+  }
+
+  chartActionLabel(action: Action): string {
+    return this.label(action);
   }
 
   cardLabel(card: Card): string {

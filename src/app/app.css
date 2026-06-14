@@ -17,7 +17,6 @@
   min-width: 0;
   border: 1px solid var(--line);
   background: var(--panel);
-  backdrop-filter: blur(10px);
 }
 
 .topbar {
@@ -255,6 +254,25 @@ dd {
 .history li::marker {
   color: var(--gold);
 }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.legend span,
+.matrix td {
+ / border-radius: 6px;
+  color: #06100d;
+  font-weight: 800;
+  padding: 0.3rem 0.45rem;
+}
+
+.action-hit { background: #f4d35e; }
+.action-stand { background: #8ecae6; }
+.action-double { background: #f28482; }
+.action-split { background: #90be6d; }
 
 .table > section,
 .matrix-wrap {

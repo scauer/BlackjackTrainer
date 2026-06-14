@@ -145,6 +145,14 @@
         <h2>{{ basicStrategy.name }}</h2>
         <span class="pill">{{ strategy.name }}</span>
       </div>
+      <div class="legend" aria-label="Strategy chart legend">
+        @for (action of chartLegend; track action) {
+          <span [class]="chartActionClass(action)">
+            <strong>{{ chartActionText(action) }}</strong>
+            {{ chartActionLabel(action) }}
+          </span>
+        }
+      </div>
 
       @for (section of chartSections; track section.title) {
         <section>
@@ -166,7 +174,9 @@
                   <tr>
                     <th scope="row">{{ row }}</th>
                     @for (dealer of dealerRanks; track dealer) {
-                      <td>{{ chartAction(section.table, row, dealer) }}</td>
+                      <td [class]="chartActionClass(chartAction(section.table, row, dealer))">
+                        {{ chartActionText(chartAction(section.table, row, dealer)) }}
+                      </td>
                     }
                   </tr>
                 }
