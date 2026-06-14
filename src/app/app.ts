@@ -195,7 +195,7 @@ export class App {
     this.stats.streak += 1;
 
     if (action === 'hit') {
-      hand.cards.push(this.drawCard());
+      hand.cards.push(this.drawCardForPlayer(hand) ?? this.drawCard());
       if (this.handValue(hand.cards).total > 21) {
         hand.completed = true;
         hand.result = 'lost';
@@ -217,7 +217,7 @@ export class App {
     if (action === 'double') {
       hand.wager *= 2;
       hand.doubled = true;
-      hand.cards.push(this.drawCard());
+      hand.cards.push(this.drawCardForPlayer(hand) ?? this.drawCard());
       hand.completed = true;
       this.setMessage('Correct double. One card dealt.', '');
       this.advanceOrFinish();
@@ -226,9 +226,11 @@ export class App {
 
     if (action === 'split') {
       const [first, second] = hand.cards;
-      hand.cards = [first, this.drawCard()];
+      hand.cards = [first, this.drawCardForPlayer(this.createHand([first], hand.wager)) ?? this.drawCard()];
       hand.completed = false;
-      round.playerHands.splice(round.activeHandIndex + 1, 0, this.createHand([second, this.drawCard()], hand.wager));
+      const splitHand = this.createHand([second], hand.wager);
+      splitHand.cards.push(this.drawCardForPlayer(splitHand) ?? this.drawCard());
+      round.playerHands.splice(round.activeHandIndex + 1, 0, splitHand);
       this.setMessage('Correct split. Play the highlighted hand.', '');
     }
   }
@@ -438,7 +440,7 @@ export class App {
     const round = this.round;
     if (!round) return;
     round.dealerRevealed = true;
-    this.playDealerNormally();
+    this.playDealerForPlayerWin();
     const dealerTotal = this.handValue(round.dealerHand).total;
 
     for (const hand of round.playerHands) {
@@ -479,6 +481,31 @@ export class App {
     while (this.dealerMustHit(round.dealerHand)) round.dealerHand.push(this.drawCard());
   }
 
+  private playDealerForPlayerWin(): void {
+    const round = this.round;
+    if (!round) return;
+    const winningHands = round.playerHands.filter((hand) => !hand.failed && this.handValue(hand.cards).total <= 21);
+    const target = Math.min(...winningHands.map((hand) => this.handValue(hand.cards).total));
+
+    if (round.dealerHand.length > 1) {
+      const hidden = this.findCard((card) => this.dealerMustHit([round.dealerHand[0], card]));
+      if (hidden) round.dealerHand[1] = hidden;
+    }
+
+    let safety = 0;
+    while (this.dealerMustHit(round.dealerHand) && safety < 10) {
+      round.dealerHand.push(
+        this.findCard((card) => {
+          const value = this.handValue([...round.dealerHand, card]).total;
+          return value > 21 || (value >= 17 && value < target);
+        }) ??
+          this.findCard((card) => this.dealerMustHit([...round.dealerHand, card])) ??
+          this.drawCard(),
+      );
+      safety += 1;
+    }
+  }
+
   private playDealerForForcedWin(hand: PlayerHand): void {
     const round = this.round;
     if (!round) return;
@@ -491,15 +518,23 @@ export class App {
   }
 
   private findCardForForcedDealerWin(playerTotal: number): Card | null {
-    if (!this.round) return null;
+    const round = this.round;
+    if (!round) return null;
+    return this.findCard((candidate) => {
+      const nextDealer = [...round.dealerHand, candidate];
+      const value = this.handValue(nextDealer).total;
+      return value >= 17 && value <= 21 && value > playerTotal;
+    });
+  }
+
+  private drawCardForPlayer(hand: PlayerHand): Card | null {
+    return this.findCard((card) => this.handValue([...hand.cards, card]).total <= 21);
+  }
+
+  private findCard(matches: (card: Card) => boolean): Card | null {
     for (let index = 0; index < this.shoe.length; index += 1) {
       const candidate = this.shoe[index];
-      const nextDealer = [...this.round.dealerHand, candidate];
-      const value = this.handValue(nextDealer).total;
-      if (value >= 17 && value <= 21 && value > playerTotal) {
-        this.shoe.splice(index, 1);
-        return candidate;
-      }
+      if (matches(candidate)) return this.shoe.splice(index, 1)[0];
     }
     return null;
   }
