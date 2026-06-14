@@ -20,7 +20,8 @@
     </div>
 
     <button type="button" class="ghost" (click)="resetBankroll()">Reset</button>
-    <button type="button" class="ghost" (click)="toggleDeckTest()">{{ viewMode === 'game' ? 'Deck Test' : 'Game' }}</button>
+    <button type="button" class="ghost" (click)="toggleStrategyChart()">{{ viewMode === 'chart' ? 'Game' : 'Chart' }}</button>
+    <button type="button" class="ghost" (click)="toggleDeckTest()">{{ viewMode === 'deck' ? 'Game' : 'Deck Test' }}</button>
   </section>
 
   <ng-template #cardFace let-card let-hidden="hidden">
@@ -116,7 +117,7 @@
         </ol>
       </section>
     </aside>
-  } @else {
+  } @else if (viewMode === 'deck') {
     <section class="table deck-test">
       <div class="zone-header">
         <h2>Deck Test</h2>
@@ -134,6 +135,43 @@
                 <ng-container [ngTemplateOutlet]="cardFace" [ngTemplateOutletContext]="{ $implicit: card }" />
               }
             }
+          </div>
+        </section>
+      }
+    </section>
+  } @else {
+    <section class="table deck-test">
+      <div class="zone-header">
+        <h2>{{ basicStrategy.name }}</h2>
+        <span class="pill">{{ strategy.name }}</span>
+      </div>
+
+      @for (section of chartSections; track section.title) {
+        <section>
+          <div class="zone-header">
+            <h2>{{ section.title }}</h2>
+          </div>
+          <div class="matrix-wrap">
+            <table class="matrix">
+              <thead>
+                <tr>
+                  <th scope="col">Hand</th>
+                  @for (dealer of dealerRanks; track dealer) {
+                    <th scope="col">{{ dealer }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of section.rows; track row) {
+                  <tr>
+                    <th scope="row">{{ row }}</th>
+                    @for (dealer of dealerRanks; track dealer) {
+                      <td>{{ chartAction(section.table, row, dealer) }}</td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
           </div>
         </section>
       }

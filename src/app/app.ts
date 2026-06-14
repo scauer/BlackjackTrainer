@@ -1,10 +1,14 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import type { Action, BasicStrategy, DealerRank, StrategyTable, TableRules } from './rule-types';
+import { defaultBasicStrategy } from './strategies/default-basic';
+import { singleDeckS17 } from './table-rules/single-deck-s17';
+import { sixDeckH17Das } from './table-rules/six-deck-h17-das';
 
 type Suit = 'spades' | 'hearts' | 'diamonds' | 'clubs';
 type Rank = 'A' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K';
-type Action = 'hit' | 'stand' | 'double' | 'split';
 type Result = 'won' | 'lost' | 'push' | 'blackjack' | null;
+type ViewMode = 'game' | 'deck' | 'chart';
 
 interface Card {
   rank: Rank;
@@ -14,13 +18,8 @@ interface Card {
 interface Strategy {
   id: string;
   name: string;
-  decks: number;
-  dealerHitsSoft17: boolean;
-  doubleAfterSplit: boolean;
-  surrenderAllowed: boolean;
-  blackjackPayout: number;
-  maxSplitHands: number;
-  doubleAllowedOn: 'any';
+  tableRules: TableRules;
+  basicStrategy: BasicStrategy;
 }
 
 interface PlayerHand {
@@ -44,7 +43,18 @@ const STARTING_BANKROLL = 100;
 const BASE_WAGER = 5;
 const SUITS: Suit[] = ['spades', 'hearts', 'diamonds', 'clubs'];
 const RANKS: Rank[] = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-const DEALER_UPCARDS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'A'];
+const DEALER_RANKS: DealerRank[] = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'A'];
+const HARD_TOTALS = ['17+', '16', '15', '14', '13', '12', '11', '10', '9'];
+const SOFT_TOTALS = ['20+', '19', '18', '17', '16', '15', '14', '13'];
+const PAIR_TOTALS = ['A', '10', '9', '8', '7', '6', '5', '4', '3', '2'];
+const TABLE_RULES: TableRules[] = [sixDeckH17Das, singleDeckS17];
+const BASIC_STRATEGY: BasicStrategy = defaultBasicStrategy;
+const STRATEGIES: Strategy[] = TABLE_RULES.map((tableRules) => ({
+  id: tableRules.id,
+  name: tableRules.name,
+  tableRules,
+  basicStrategy: BASIC_STRATEGY,
+}));
 
 @Component({
   selector: 'app-root',
@@ -55,33 +65,11 @@ const DEALER_UPCARDS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'A'];
 export class App {
   readonly startingBankroll = STARTING_BANKROLL;
   readonly baseWager = BASE_WAGER;
-  readonly strategies: Strategy[] = [
-    {
-      id: 'six-deck-h17-das',
-      name: '6 Deck H17 DAS',
-      decks: 6,
-      dealerHitsSoft17: true,
-      doubleAfterSplit: true,
-      surrenderAllowed: false,
-      blackjackPayout: 1.5,
-      maxSplitHands: 4,
-      doubleAllowedOn: 'any',
-    },
-    {
-      id: 'single-deck-s17',
-      name: 'Single Deck S17',
-      decks: 1,
-      dealerHitsSoft17: false,
-      doubleAfterSplit: true,
-      surrenderAllowed: false,
-      blackjackPayout: 1.5,
-      maxSplitHands: 4,
-      doubleAllowedOn: 'any',
-    },
-  ];
+  readonly dealerRanks = DEALER_RANKS;
+  readonly strategies = STRATEGIES;
 
   selectedStrategyId = this.strategies[0].id;
-  viewMode: 'game' | 'deck' = 'game';
+  viewMode: ViewMode = 'game';
   bankroll = STARTING_BANKROLL;
   shoe: Card[] = [];
   round: Round | null = null;
@@ -97,6 +85,14 @@ export class App {
 
   get strategy(): Strategy {
     return this.strategies.find((item) => item.id === this.selectedStrategyId) ?? this.strategies[0];
+  }
+
+  get tableRules(): TableRules {
+    return this.strategy.tableRules;
+  }
+
+  get basicStrategy(): BasicStrategy {
+    return this.strategy.basicStrategy;
   }
 
   get activeHand(): PlayerHand | null {
@@ -119,10 +115,10 @@ export class App {
 
   get rulesRows(): [string, string][] {
     return [
-      ['Decks', String(this.strategy.decks)],
-      ['Dealer soft 17', this.strategy.dealerHitsSoft17 ? 'Hits' : 'Stands'],
-      ['Double after split', this.strategy.doubleAfterSplit ? 'Yes' : 'No'],
-      ['Blackjack pays', this.strategy.blackjackPayout === 1.5 ? '3:2' : '6:5'],
+      ['Decks', String(this.tableRules.decks)],
+      ['Dealer soft 17', this.tableRules.dealerHitsSoft17 ? 'Hits' : 'Stands'],
+      ['Double after split', this.tableRules.doubleAfterSplit ? 'Yes' : 'No'],
+      ['Blackjack pays', this.tableRules.blackjackPayout === 1.5 ? '3:2' : '6:5'],
       ['Base wager', this.money(BASE_WAGER)],
       ['Shoe mode', 'Fresh each hand'],
     ];
@@ -132,8 +128,20 @@ export class App {
     return SUITS.flatMap((suit) => RANKS.map((rank) => ({ rank, suit })));
   }
 
+  get chartSections(): { title: string; rows: string[]; table: StrategyTable }[] {
+    return [
+      { title: 'Hard Totals', rows: HARD_TOTALS, table: this.basicStrategy.hard },
+      { title: 'Soft Totals', rows: SOFT_TOTALS, table: this.basicStrategy.soft },
+      { title: 'Pairs', rows: PAIR_TOTALS, table: this.basicStrategy.pairs },
+    ];
+  }
+
   toggleDeckTest(): void {
     this.viewMode = this.viewMode === 'game' ? 'deck' : 'game';
+  }
+
+  toggleStrategyChart(): void {
+    this.viewMode = this.viewMode === 'chart' ? 'game' : 'chart';
   }
 
   selectStrategy(event: Event): void {
@@ -156,7 +164,7 @@ export class App {
       return;
     }
 
-    this.shoe = this.buildShoe(this.strategy.decks);
+    this.shoe = this.buildShoe(this.tableRules.decks);
     this.round = {
       dealerHand: [this.drawCard(), this.drawCard()],
       playerHands: [this.createHand([this.drawCard(), this.drawCard()], BASE_WAGER)],
@@ -241,12 +249,16 @@ export class App {
         hand &&
         hand.cards.length === 2 &&
         this.isPair(hand.cards) &&
-        this.round.playerHands.length < this.strategy.maxSplitHands,
+        this.round.playerHands.length < this.tableRules.maxSplitHands,
     );
   }
 
   canDouble(hand: PlayerHand | null): boolean {
     return Boolean(hand && hand.cards.length === 2 && !hand.completed);
+  }
+
+  chartAction(table: StrategyTable, row: string, dealer: DealerRank): string {
+    return this.label(table[row]?.[dealer] ?? 'hit');
   }
 
   cardLabel(card: Card): string {
@@ -327,7 +339,7 @@ export class App {
   }
 
   private drawCard(): Card {
-    if (this.shoe.length < 20) this.shoe = this.buildShoe(this.strategy.decks);
+    if (this.shoe.length < 20) this.shoe = this.buildShoe(this.tableRules.decks);
     const card = this.shoe.pop();
     if (!card) throw new Error('Shoe unexpectedly empty');
     return card;
@@ -339,8 +351,9 @@ export class App {
     return Number(card.rank);
   }
 
-  private normalizeDealerRank(card: Card): string {
-    return this.cardValue(card) === 10 ? '10' : card.rank;
+  private normalizeDealerRank(card: Card): DealerRank {
+    if (this.cardValue(card) === 10) return '10';
+    return card.rank as DealerRank;
   }
 
   private handValue(cards: Card[]): { total: number; soft: boolean } {
@@ -372,19 +385,7 @@ export class App {
 
     if (this.canSplit(hand)) {
       const pairRank = this.cardValue(cards[0]) === 10 ? '10' : cards[0].rank;
-      const splitMap: Record<string, Record<string, Action>> = {
-        A: this.always('split'),
-        '10': this.always('stand'),
-        '9': this.byDealer(['7', '10', 'A'], 'stand', 'split'),
-        '8': this.always('split'),
-        '7': this.byDealer(['2', '3', '4', '5', '6', '7'], 'split', 'hit'),
-        '6': this.byDealer(['2', '3', '4', '5', '6'], 'split', 'hit'),
-        '5': this.byDealer(['2', '3', '4', '5', '6', '7', '8', '9'], 'double', 'hit'),
-        '4': this.byDealer(['5', '6'], 'split', 'hit'),
-        '3': this.byDealer(['2', '3', '4', '5', '6', '7'], 'split', 'hit'),
-        '2': this.byDealer(['2', '3', '4', '5', '6', '7'], 'split', 'hit'),
-      };
-      const pairAction = splitMap[pairRank]?.[dealer];
+      const pairAction = this.basicStrategy.pairs[pairRank]?.[dealer];
       if (pairAction) return pairAction;
     }
 
@@ -392,36 +393,16 @@ export class App {
     return this.hardTotalAction(value.total, dealer);
   }
 
-  private always(action: Action): Record<string, Action> {
-    return Object.fromEntries(DEALER_UPCARDS.map((rank) => [rank, action]));
+  private hardTotalAction(total: number, dealer: DealerRank): Action {
+    return this.lookupAction(this.basicStrategy.hard, total >= 17 ? '17+' : String(total), dealer, 'hit');
   }
 
-  private byDealer(ranks: string[], matching: Action, fallback: Action): Record<string, Action> {
-    return Object.fromEntries(DEALER_UPCARDS.map((rank) => [rank, ranks.includes(rank) ? matching : fallback]));
+  private softTotalAction(total: number, dealer: DealerRank): Action {
+    return this.lookupAction(this.basicStrategy.soft, total >= 20 ? '20+' : String(total), dealer, 'hit');
   }
 
-  private hardTotalAction(total: number, dealer: string): Action {
-    if (total >= 17) return 'stand';
-    if (total >= 13) return ['2', '3', '4', '5', '6'].includes(dealer) ? 'stand' : 'hit';
-    if (total === 12) return ['4', '5', '6'].includes(dealer) ? 'stand' : 'hit';
-    if (total === 11) return dealer === 'A' ? 'hit' : 'double';
-    if (total === 10) return ['2', '3', '4', '5', '6', '7', '8', '9'].includes(dealer) ? 'double' : 'hit';
-    if (total === 9) return ['3', '4', '5', '6'].includes(dealer) ? 'double' : 'hit';
-    return 'hit';
-  }
-
-  private softTotalAction(total: number, dealer: string): Action {
-    if (total >= 20) return 'stand';
-    if (total === 19) return dealer === '6' ? 'double' : 'stand';
-    if (total === 18) {
-      if (['3', '4', '5', '6'].includes(dealer)) return 'double';
-      if (['2', '7', '8'].includes(dealer)) return 'stand';
-      return 'hit';
-    }
-    if (total === 17) return ['3', '4', '5', '6'].includes(dealer) ? 'double' : 'hit';
-    if ([15, 16].includes(total)) return ['4', '5', '6'].includes(dealer) ? 'double' : 'hit';
-    if ([13, 14].includes(total)) return ['5', '6'].includes(dealer) ? 'double' : 'hit';
-    return 'hit';
+  private lookupAction(table: StrategyTable, row: string, dealer: DealerRank, fallback: Action): Action {
+    return table[row]?.[dealer] ?? fallback;
   }
 
   private advanceOrFinish(): void {
@@ -542,7 +523,7 @@ export class App {
   private dealerMustHit(cards: Card[]): boolean {
     const value = this.handValue(cards);
     if (value.total < 17) return true;
-    return value.total === 17 && value.soft && this.strategy.dealerHitsSoft17;
+    return value.total === 17 && value.soft && this.tableRules.dealerHitsSoft17;
   }
 
   private settleRound(message: string): void {
@@ -551,7 +532,7 @@ export class App {
     let delta = 0;
     for (const hand of round.playerHands) {
       if (hand.result === 'won') delta += hand.wager;
-      if (hand.result === 'blackjack') delta += hand.wager * this.strategy.blackjackPayout;
+      if (hand.result === 'blackjack') delta += hand.wager * this.tableRules.blackjackPayout;
       if (hand.result === 'lost') delta -= hand.wager;
     }
     this.bankroll += delta;
