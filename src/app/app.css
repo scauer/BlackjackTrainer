@@ -73,6 +73,8 @@ select {
 }
 
 .topbar button {
+  width: 100%;
+  max-width: 6.25rem;
   min-height: 2rem;
   border-radius: 6px;
   padding: 0 0.65rem;
@@ -291,14 +293,13 @@ dd {
   }
 
   .topbar {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr) repeat(3, minmax(3.25rem, auto));
     gap: 0.5rem;
     padding: 0.5rem;
   }
 
   .topbar > div:first-child,
-  .strategy-field,
-  .bankroll {
+  .strategy-field {
     grid-column: 1 / -1;
   }
 
@@ -322,7 +323,7 @@ dd {
     min-height: 1.55rem;
     padding: 0 0.4rem;
     font-size: 0.7rem;
-    width: 100%;
+    justify-self: end;
   }
 
   .actions {
